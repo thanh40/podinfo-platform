@@ -46,11 +46,12 @@ make teardown                      # delete cluster
 
 ## CI/CD Pipeline
 
-The pipeline has three jobs, all using the same Makefile targets as local development:
+The pipeline has four jobs, all using the same Makefile targets as local development:
 
 | Job | Trigger | What it does |
 |-----|---------|-------------|
 | `lint-and-validate` | every push | `make lint` — lints and template-validates both charts |
+| `deploy-ephemeral` | PR or manual (`workflow_dispatch`) | deploys to an ephemeral kind cluster, runs `make verify` |
 | `deploy-staging` | push to `main` | deploys to an ephemeral kind cluster, runs `make verify` |
 | `deploy-prod` | after staging + manual approval | deploys with prod values, auto-rollback on failure |
 

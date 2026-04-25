@@ -4,6 +4,7 @@ on:
   push:
     branches: ["**"]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   lint-and-validate:
@@ -20,6 +21,36 @@ jobs:
 
       - name: Lint & validate all charts
         run: make lint
+
+  deploy-ephemeral:
+    name: Deploy to Ephemeral
+    needs: lint-and-validate
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: ephemeral
+
+      - name: Build chart dependencies
+        run: |
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm dependency build helm/kube-prometheus-stack
+
+      - name: Deploy observability stack
+        run: make deploy-kube-prometheus-stack
+
+      - name: Deploy podinfo
+        run: make deploy-podinfo
+
+      - name: Verify
+        run: make verify
 
   deploy-staging:
     name: Deploy to Staging
