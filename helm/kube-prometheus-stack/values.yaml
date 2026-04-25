@@ -1,0 +1,29 @@
+kube-prometheus-stack:
+  grafana:
+    adminPassword: admin
+    sidecar:
+      dashboards:
+        label: dashboard-provider
+        labelValue: "podinfo"
+        folderAnnotation: grafana_folder
+        SCProvider: false
+        annotations:
+          grafana_folder: "Default Dashboards"
+    dashboardProviders:
+      dashboardproviders.yaml:
+        apiVersion: 1
+        providers:
+          - name: sidecarProvider
+            orgId: 1
+            type: file
+            disableDeletion: false
+            allowUiUpdates: false
+            updateIntervalSeconds: 30
+            options:
+              foldersFromFilesStructure: true
+              path: /tmp/dashboards
+
+  prometheus:
+    prometheusSpec:
+      serviceMonitorSelectorNilUsesHelmValues: false
+      ruleSelectorNilUsesHelmValues: false

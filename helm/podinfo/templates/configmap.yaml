@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "podinfo.fullname" . }}
+  labels:
+    {{- include "podinfo.labels" . | nindent 4 }}
+data:
+  PODINFO_PORT: {{ .Values.config.port | quote }}
+  PODINFO_LEVEL: {{ .Values.config.logLevel | quote }}
