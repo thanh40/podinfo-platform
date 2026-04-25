@@ -1,0 +1,85 @@
+name: Helm CI/CD
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  lint-and-validate:
+    name: Lint & Validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Add Helm repos
+        run: helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+
+      - name: Lint & validate all charts
+        run: make lint
+
+  deploy-staging:
+    name: Deploy to Staging
+    needs: lint-and-validate
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: staging
+
+      - name: Build chart dependencies
+        run: |
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm dependency build helm/kube-prometheus-stack
+
+      - name: Deploy observability stack
+        run: make deploy-kube-prometheus-stack
+
+      - name: Deploy podinfo (staging)
+        run: make deploy-podinfo
+
+      - name: Verify staging
+        run: make verify
+
+  deploy-prod:
+    name: Deploy to Prod
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    # Requires a GitHub Environment named "production" with required reviewers configured
+    # Settings → Environments → production → Required reviewers
+    environment: production
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: prod
+
+      - name: Build chart dependencies
+        run: |
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm dependency build helm/kube-prometheus-stack
+
+      - name: Deploy observability stack
+        run: make deploy-kube-prometheus-stack ENV=prod
+
+      - name: Deploy podinfo (prod)
+        run: make deploy-podinfo ENV=prod
+
+      - name: Verify prod
+        run: make verify
