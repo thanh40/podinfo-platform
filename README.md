@@ -67,8 +67,6 @@ The pipeline has four jobs, all using the same Makefile targets as local develop
 
 *Scenario: PodInfoDown alert fires — the service has been unreachable for 3 minutes.*
 
-The alert comes from `kube_deployment_status_replicas_available == 0`, so the first question is whether this is a pod failure, a network issue, or a bad deploy. The goal in the first two minutes is to establish which path we're on before taking any action — rolling back the wrong thing or bumping resources blindly wastes time and can make things worse.
-
 1. Check if the pods themselves are healthy:
 ```
 kubectl get pods -n default -l app.kubernetes.io/name=podinfo
